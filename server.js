@@ -16,7 +16,11 @@ const PORT = process.env.PORT || 3000;
  * 3. Asigna la colección 'equipos' a req.collection usando req.db.collection().
  * 4. Llama a next().
  */
-// Tu código aquí
+app.use((req, res, next) => {
+    req.db = client.db('MundialDB');
+    req.collection = req.db.collection('equipos');
+    next();
+});
 
 /**
  * TODO: Implementar un endpoint GET /equipos
@@ -26,7 +30,8 @@ const PORT = process.env.PORT || 3000;
  * IMPORTANTE: Recuerda que las consultas a MongoDB son asincrónicas.
  */
 app.get('/equipos', async (req, res) => {
-    // Tu código aquí
+    const equipos = await req.collection.find().toArray();
+    res.status(200).json(equipos);
 });
 
 /**
@@ -38,7 +43,8 @@ app.get('/equipos', async (req, res) => {
  * IMPORTANTE: ¡Esta ruta debe ir ANTES que la ruta GET /equipos/:id!
  */
 app.get('/equipos/buscar', async (req, res) => {
-    // Tu código aquí
+    const equipos = await req.collection.find({ tecnico: { $regex: req.query.tecnico, $options: 'i' } }).toArray();
+    res.status(200).json(equipos);
 });
 
 /**
@@ -51,7 +57,16 @@ app.get('/equipos/buscar', async (req, res) => {
  * 5. Si no lo encuentra, retornar un status 404 y { error: "Equipo no encontrado" }.
  */
 app.get('/equipos/:id', async (req, res) => {
-    // Tu código aquí
+    if (!ObjectId.isValid(req.params.id)) {
+        res.status(400).json({ error: 'ID inválido' });
+        return;
+    }
+    const equipo = await req.collection.findOne({ _id: new ObjectId(req.params.id) });
+    if (!equipo) {
+        res.status(404).json({ error: 'Equipo no encontrado' });
+        return;
+    }
+    res.status(200).json(equipo);
 });
 
 
